@@ -25,20 +25,66 @@ class ElevatorService
 
     public function sendRequest($request)
     {
-        $validator = $this->getValidator($request);
+        $validator = $this->getValidator($request->all());
         if ($validator->fails()) {
             return false;
         }
 
-        return $this->createRequest($request);
+        if ($this->isDuplicateRequest($request)) {
+            return false;
+        }
+
+        $elevatorRequest = $this->createRequest($request);
+
+        dispatch(new ProcessElevatorRequest($this));
+
+        return $elevatorRequest;
     }
 
-    private function getValidator($request)
+    public function sendBulkRequest($data)
     {
-        return Validator::make($request->all(), [
+        if (!isset($data['requests']) || !is_array($data['requests'])) {
+            return false;
+        }
+
+        $insert = [];
+        foreach ($data['requests'] as [$from, $to]) {
+            $request = ['from' => $from, 'to' => $to];
+            $validator = $this->getValidator($request);
+            if ($validator->fails()) {
+                return false;
+            }
+
+            if ($this->isDuplicateRequest($request)) {
+                return false;
+            }
+
+            $insert[] = array_merge(
+                $request,
+                ['created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]
+            );
+        }
+
+        return ElevatorRequest::insert($insert);
+    }
+
+    }
+
+    private function getValidator($data)
+    {
+        return Validator::make($data, [
             'from' => 'bail|integer|required',
-            'to' => 'required|integer',
+            'to' => 'required|integer|different:from',
         ]);
+    }
+
+    private function isDuplicateRequest($request)
+    {
+        $count = ElevatorRequest::where('from', $request->input('from'))
+            ->where('to', $request->input('to'))
+            ->count();
+
+        return $count > 0;
     }
 
     private function createRequest($request)

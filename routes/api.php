@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 
 $controller = 'ElevatorController@';
 Route::post('request', $controller . 'request');
+Route::post('bulk-request', $controller . 'bulkRequest');
 Route::get('status', $controller . 'status');
 Route::delete('reset', $controller . 'reset');
 

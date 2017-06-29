@@ -21,7 +21,7 @@ class ElevatorController extends Controller
      */
     public function status()
     {
-        return response($this->elevatorService->status());
+        return $this->successResponse($this->elevatorService->status());
     }
 
     /**
@@ -33,12 +33,19 @@ class ElevatorController extends Controller
     public function request(Request $request)
     {
         if ($elevatorRequest = $this->elevatorService->sendRequest($request)) {
-            return response()->json([
-                'request_id' => $elevatorRequest->id,
-            ]);
+            return $this->successResponse(['request_id' => $elevatorRequest->id]);
         }
 
-        return response('Invalid request', 500);
+        return $this->errorResponse();
+    }
+
+    public function bulkRequest(Request $request)
+    {
+        if ($requestIds = $this->elevatorService->sendBulkRequest($request->json()->all())) {
+            return $this->successResponse(['request_ids' => $requestIds]);
+        }
+
+        return $this->errorResponse();
     }
 
     /**
@@ -49,6 +56,19 @@ class ElevatorController extends Controller
     public function reset()
     {
         $this->elevatorService->reset();
-        return response()->json(['reset' => 1]);
+        return $this->successResponse(['reset' => 1]);
+    }
+
+    /**
+     * @param Array $data
+     */
+    protected function successResponse($data)
+    {
+        return response()->json($data);
+    }
+
+    protected function errorResponse()
+    {
+        return response('Invalid request', 500);
     }
 }
