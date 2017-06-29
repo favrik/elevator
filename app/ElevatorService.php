@@ -2,19 +2,23 @@
 
 namespace App;
 
+use Illuminate\Support\Facades\Log;
 use Validator;
 use App\Elevator;
 use App\ElevatorRequest;
+use App\Jobs\ProcessElevatorRequest;
 use Favrik\Elevator as ElevatorEntity;
+use Favrik\Schedule\FirstComeFirstServedSchedule as FIFOSchedule;
 
 class ElevatorService
 {
     const ELEVATOR_ID = 1;
 
+    private $elevator;
+
     public function status()
     {
-        $elevator = Elevator::find(self::ELEVATOR_ID);
-        return $elevator->toJson();
+        return $this->getElevator();
     }
 
     public function reset()
@@ -68,6 +72,42 @@ class ElevatorService
         return ElevatorRequest::insert($insert);
     }
 
+    public function handleRequests()
+    {
+        $this->elevator = $this->getElevator();
+        $elevatorLogic = new ElevatorEntity($this->elevator, $this);
+        $scheduler = new FIFOSchedule($this->getPendingRequests());
+
+        if (!$elevatorLogic->canReceiveRequest()) {
+            return;
+        }
+
+        $this->updateState(['processing' => 1]);
+        while ($request = $scheduler->next()) {
+            // Request ids can be null, in case the scheduler algo created
+            // intermediate requests (not in the db).
+            if (isset($request->id)) {
+                $this->updateState(['request_id' => $request->id]);
+            }
+
+            $elevatorLogic->request($request);
+
+            if (isset($request->id)) {
+                ElevatorRequest::destroy($request->id);
+            }
+        }
+
+        $this->updateState(['request_id' => 0, 'processing' => 0]);
+        $requests = $this->getPendingRequests();
+        if (!empty($requests)) {
+            dispatch(new ProcessElevatorRequest($this));
+        }
+    }
+
+    public function updateState($state)
+    {
+        Log::info('Elevator state', $state);
+        $this->elevator->fill($state)->save();
     }
 
     private function getValidator($data)
@@ -99,14 +139,19 @@ class ElevatorService
 
     private function resetElevator()
     {
-        $entity = new ElevatorEntity;
-        $defaultState = $entity->getDefaultState();
-
-        $elevator = Elevator::find(self::ELEVATOR_ID);
-        $elevator->signal = $defaultState['signal'];
-        $elevator->direction = $defaultState['direction'];
-        $elevator->current_floor = $defaultState['current_floor'];
-
-        $elevator->save();
+        Elevator::where('id', self::ELEVATOR_ID)->update(
+            ElevatorEntity::getDefaultState()
+        );
     }
+
+    private function getElevator()
+    {
+        return Elevator::find(self::ELEVATOR_ID);
+    }
+
+    private function getPendingRequests()
+    {
+        return ElevatorRequest::orderBy('id', 'ASC')->get()->all();
+    }
+
 }
