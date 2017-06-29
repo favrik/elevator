@@ -8,23 +8,22 @@ class FirstComeFirstServedSchedule implements ScheduleInterface
 {
     private $queue;
 
-    public function __construct()
+    public function __construct($requests)
     {
-        $this->queue = new \SplQueue();
-        $this->queue->setIteratorMode(\SplQueue::IT_MODE_DELETE);
-    }
-
-    public function add($from, $to)
-    {
-        $this->queue->push([$from, $to]);
+        $this->queue = $requests;
     }
 
     public function next()
     {
-        if (!$this->queue->isEmpty()) {
-            return $this->queue->shift();
+        if ($this->valid()) {
+            return array_shift($this->queue);
         }
 
         return false;
+    }
+
+    public function valid()
+    {
+        return !empty($this->queue);
     }
 }
