@@ -9,7 +9,7 @@ The scheduling will be like:
 if available pick a standing elevator for this floor.
 else pick an elevator moving to this floor.
 else pick a standing elevator on another floor.
- 
+
 Sample data:
 - Elevator standing in first floor
 - Request from 6th floor go down to ground(first floor).
@@ -17,7 +17,7 @@ Sample data:
 - Request from 3rd floor go down to ground
 - Request from ground go up to 7th floor.
 - Floor 2 and 4 are in maintenance.
- 
+
 Please use Bootstrap to implement the U/I.
 Extra Point: Making an API to send/receive requests to elevator and write log file.
  */
@@ -51,35 +51,54 @@ class Elevator {
      */
     private $currentFloor;
 
+    private $testing;
+
     /**
      * How much time does the Elevator takes to cover the distance between
      * adjacent floors, in seconds.
      *
      * @var int
      */
-    private $floorTravelTime;
+    private $floorTravelTime = 2;
 
-    private $requestTime;
+    private $standingOpenTime = 2;
 
-    public function __construct()
+    private $storage;
+    private $service;
+
+    public function __construct($storage, $service)
     {
-        $this->setDefaultState();
+        $this->storage = $storage;
+        $this->service = $service;
+        $this->setState();
     }
 
-    private function setDefaultState()
+    private function setState()
     {
-        $this->currentFloor = 1;
-        $this->signal = 'closed';
-        $this->direction = 'stand';
-        $this->floorTravelTime = 1;
+        $this->currentFloor = $this->storage->current_floor;
+        $this->signal = $this->storage->signal;
+        $this->direction = $this->storage->direction;
+        $this->testing = $this->storage->testing;
     }
 
-    public function getDefaultState()
+    public function getState()
     {
         return [
             'current_floor' => $this->currentFloor,
             'signal' => $this->signal,
             'direction' => $this->direction,
+        ];
+    }
+
+    public static function getDefaultState()
+    {
+        return [
+            'current_floor' => 1,
+            'signal' => 'closed',
+            'direction' => 'stand',
+            'request_id' => 0,
+            'testing' => 0,
+            'processing' => 0,
         ];
     }
 
@@ -119,61 +138,98 @@ class Elevator {
 
     public function canReceiveRequest()
     {
-        if ($this->hasSignal('alarm')) {
-            return false;
-        }
-
-        if (in_array($this->direction, ['maintenance', 'up', 'down'])) {
+        if ($this->hasSignal('alarm')
+            || in_array($this->direction, ['maintenance', 'up', 'down'])
+            || $this->storage->processing
+        ) {
             return false;
         }
 
         return true;
     }
 
-    public function reset()
+    public function request($request)
     {
-        if ($this->hasSignal('alarm') || $this->direction === 'maintenance') {
-            $this->setDefaultState();
+        if ($request->to === $this->currentFloor) {
+            $this->onArrival();
             return true;
         }
 
-        return false;
+        return $this->onStart($request);
     }
 
-
-    public function request($from, $to)
+    private function onArrival()
     {
-        if ($this->canReceiveRequest()) {
-            $this->requestTime = time();
-
-            $distance = $from - $to;
-            if ($distance === 0) {
-                return true;
-            }
-
-            if ($distance > 0) {
-                $this->setDirection('down');
-            }
-
-            if ($distance < 0) {
-                $this->setDirection('up');
-            }
-
-            while (true) {
-                yield $this->requestStatus($distance);
-            }
-        }
-
-        return false;
+        $this->openDoors();
     }
 
-    private function requestStatus($distance)
+    private function onStart($request)
     {
-        $duration = $distance * $this->floorTravelTime;
-        $elapsedTime = time() - $this->requestTime;
+        $this->moveToStart($request);
 
-        if ($elapsedTime >= $duration) {
-            
+        $distance = $request->from - $request->to;
+        $this->openDoors();
+        $this->setDirection($distance > 0 ? 'down' : 'up');
+        $this->syncState();
+
+        if ($this->currentFloor != $request->from) {
+            throw new Exception('invalid floor onStart');
         }
+
+        $this->travel($this->currentFloor, $request->to);
+        $this->onArrival();
+
+        return true;
+    }
+
+    private function moveToStart($request)
+    {
+        $distance = $this->currentFloor - $request->from;
+        if ($distance === 0) { // Already at start position.
+            return;
+        }
+
+        $this->setDirection($distance > 0 ? 'down' : 'up');
+        $this->triggerSignal('closed');
+        $this->syncState();
+
+        $this->travel($this->currentFloor, $request->from);
+    }
+
+    private function travel($from, $to)
+    {
+        $floors = range($from, $to);
+        array_shift($floors);
+        foreach ($floors as $floor) {
+            $this->delay($this->floorTravelTime);
+            $this->currentFloor = $floor;
+            $this->syncState();
+        }
+    }
+
+    private function openDoors()
+    {
+        $this->triggerSignal('open');
+        $this->setDirection('stand');
+        $this->syncState();
+
+        $this->delay($this->standingOpenTime);
+
+        $this->triggerSignal('closed');
+        $this->syncState();
+    }
+
+    private function delay($seconds)
+    {
+        if ($this->testing) {
+            return;
+        }
+
+        sleep($seconds);
+    }
+
+    private function syncState()
+    {
+        $this->service->updateState($this->getState());
     }
 }

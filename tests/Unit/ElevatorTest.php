@@ -4,6 +4,8 @@ namespace Tests\Unit;
 
 use Tests\TestCase;
 use Favrik\Elevator;
+use App\Elevator as Storage;
+use App\ElevatorService;
 
 class ElevatorTest extends TestCase
 {
@@ -11,7 +13,10 @@ class ElevatorTest extends TestCase
 
     protected function setUp()
     {
-        $this->elevator = new Elevator();
+        $this->elevator = new Elevator(
+            (object) Elevator::getDefaultState(),
+            new ElevatorService
+        );
     }
 
     public function testDefaultSignal()
@@ -46,6 +51,16 @@ class ElevatorTest extends TestCase
         $this->assertTrue($this->elevator->canReceiveRequest());
     }
 
+    public function testCannotReceiveRequestOnProcessing()
+    {
+        $storage = (object) Elevator::getDefaultState();
+        $elevator = new Elevator($storage, new ElevatorService);
+
+        $storage->processing = 1;
+
+        $this->assertFalse($elevator->canReceiveRequest());
+    }
+
     public function testCannotReceiveRequestOnAlarm()
     {
         $this->elevator->triggerSignal('alarm');
@@ -58,22 +73,7 @@ class ElevatorTest extends TestCase
         $this->assertFalse($this->elevator->canReceiveRequest());
     }
 
-    public function testReset()
-    {
-        $this->elevator->setInMaintenance();
-        $this->elevator->triggerSignal('alarm');
-        $resetReturn = $this->elevator->reset();
-        $this->assertTrue($this->elevator->canReceiveRequest());
-        $this->assertTrue($resetReturn);
-    }
-
-    public function testInvalidReset()
-    {
-        $this->assertFalse($this->elevator->reset());
-    }
-
     public function testRequest()
     {
-        $this->elevator->request(1, 3);
     }
 }
