@@ -11,7 +11,7 @@ class Elevator extends Model
 
     protected $appends = ['request'];
 
-    protected $hidden = ['request_id'];
+    protected $fillable = ['current_floor', 'request_id', 'direction', 'signal', 'processing'];
 
     public function getRequestAttribute()
     {
