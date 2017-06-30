@@ -3,10 +3,12 @@
 namespace App;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Validator;
 use App\Elevator;
 use App\ElevatorRequest;
 use App\Jobs\ProcessElevatorRequest;
+use App\Events\ElevatorStateUpdated;
 use Favrik\Elevator as ElevatorEntity;
 use Favrik\Schedule\FirstComeFirstServedSchedule as FIFOSchedule;
 
@@ -82,12 +84,12 @@ class ElevatorService
             return;
         }
 
-        $this->updateState(['processing' => 1]);
+        $this->updateProcessingState(['processing' => 1]);
         while ($request = $scheduler->next()) {
             // Request ids can be null, in case the scheduler algo created
             // intermediate requests (not in the db).
             if (isset($request->id)) {
-                $this->updateState(['request_id' => $request->id]);
+                $this->updateProcessingState(['request_id' => $request->id]);
             }
 
             $elevatorLogic->request($request);
@@ -97,7 +99,7 @@ class ElevatorService
             }
         }
 
-        $this->updateState(['request_id' => 0, 'processing' => 0]);
+        $this->updateProcessingState(['request_id' => 0, 'processing' => 0]);
         $requests = $this->getPendingRequests();
         if (!empty($requests)) {
             dispatch(new ProcessElevatorRequest($this));
@@ -106,7 +108,25 @@ class ElevatorService
 
     public function updateState($state)
     {
-        Log::info('Elevator state', $state);
+        $currentState = [
+            'current_floor' => $this->elevator->current_floor,
+            'signal' => $this->elevator->signal,
+            'direction' => $this->elevator->direction,
+        ];
+
+        if ($currentState != $state) {
+            Log::info('Elevator state', $state);
+            $this->elevator->fill($state)->save();
+            // Sends event to the queue, and then it is picked by the worker, which
+            // uses the Laravel flow.  However, this adds latency, and we don't really
+            // need the event anywhere else.
+            //event(new ElevatorStateUpdated($state));
+            Redis::publish('elevator', json_encode(['event' => 'App\Events\ElevatorStateUpdated', 'data' => ['state' => $state]]));
+        }
+    }
+
+    private function updateProcessingState($state)
+    {
         $this->elevator->fill($state)->save();
     }
 
