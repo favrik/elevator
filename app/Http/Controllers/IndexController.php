@@ -12,7 +12,10 @@ class IndexController extends Controller
     public function index()
     {
         $service = new ElevatorService;
-        return view('index', ['state' => $service->status()->toJson()]);
+        return view('index', [
+            'state' => $service->status()->toJson(),
+            'config' => json_encode(['url' => env('APP_URL')])
+        ]);
     }
 
     /**

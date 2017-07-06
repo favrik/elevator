@@ -9,5 +9,5 @@ import Echo from 'laravel-echo'
 
 window.Echo = new Echo({
     broadcaster: 'socket.io',
-    host: 'http://el.loc:6001'
+    host: E_CONFIG.url + ':6001'
 });

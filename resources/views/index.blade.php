@@ -71,6 +71,7 @@
 
 <script>
 var E_STATE = {!! $state !!};
+var E_CONFIG = {!! $config !!};
 </script>
 @endsection
 
