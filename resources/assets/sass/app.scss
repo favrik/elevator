@@ -1,9 +1,200 @@
 
 // Fonts
-@import url(https://fonts.googleapis.com/css?family=Raleway:300,400,600);
+@import url(https://fonts.googleapis.com/css?family=Arvo|Lato:400,700);
+
 
 // Variables
 @import "variables";
 
-// Bootstrap
-@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/variables";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/mixins";
+
+// Reset and dependencies
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/normalize";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/glyphicons";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/forms";
+@import "node_modules/bootstrap-sass/assets/stylesheets/bootstrap/buttons";
+
+// Core CSS
+// http://getbootstrap.com/getting-started/#third-box-sizing
+* {
+  @include box-sizing(border-box);
+}
+*:before,
+*:after {
+  @include box-sizing(border-box);
+}
+
+html {
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%; /* Prevent adjustments of font size after orientation changes in iOS */
+}
+
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $body-bg;
+}
+
+@media screen and (min-width: 280px) {
+  body {
+    //font-size: 2em;
+  }
+}
+
+
+@media screen and (min-width: 500px) {
+  html {
+    font-size: calc(16px + 7 * ((70vw - 500px) / 900));
+  }
+}
+
+h1 {
+  font-size: 2rem;
+  text-align: center;
+  letter-spacing: 2px;
+  padding: 50px 20px;
+  margin: 0;
+  line-height: 1.4;
+  background: #111;
+  color: #fff;
+  font-family: $font-family-heading;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: .6em ;
+  font-family: $font-family-heading;
+}
+
+.container {
+  @include container-fixed;
+
+  @media (min-width: 1200px) {
+    width: 1200px;
+
+  }
+
+  margin: 0 auto;
+}
+
+.row {
+  @include make-row;
+}
+
+.elevator {
+  @include make-xs-column(4);
+}
+
+$elevatorBorderSpec: 1px solid #333;
+
+.elevator__floor {
+  min-height: 10vh;
+  margin: 0 auto;
+
+  border-top: $elevatorBorderSpec;
+  border-left: $elevatorBorderSpec;
+  border-right: $elevatorBorderSpec;
+
+  font-weight: bold;
+  padding: 10px;
+  font-size: .9rem;
+}
+
+
+$elevatorRadius: 0px;
+
+.elevator__floor:first-child {
+  @include border-top-radius($elevatorRadius);
+}
+
+.elevator__floor:last-child {
+  border-bottom: $elevatorBorderSpec;
+  @include border-bottom-radius($elevatorRadius);
+}
+
+.elevator__floor--current {
+  background: #111;
+  color: #fff;
+}
+
+.control {
+  @include make-xs-column(8);
+
+}
+
+.elevator, .control {
+  padding-top: 15px;
+}
+
+th, td {
+  text-align: left;
+  font-size: .9rem;
+}
+
+.table {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: $line-height-computed;
+  // Cells
+  > thead,
+  > tbody,
+  > tfoot {
+    > tr {
+      > th,
+      > td {
+        padding: $table-cell-padding;
+        line-height: $line-height-base;
+        vertical-align: top;
+        border-top: 1px solid $table-border-color;
+      }
+    }
+  }
+  // Bottom align for column headings
+  > thead > tr > th {
+    vertical-align: bottom;
+    border-bottom: 2px solid $table-border-color;
+  }
+  // Remove top border from thead by default
+  > caption + thead,
+  > colgroup + thead,
+  > thead:first-child {
+    > tr:first-child {
+      > th,
+      > td {
+        border-top: 0;
+      }
+    }
+  }
+  // Account for multiple tbody instances
+  > tbody + tbody {
+    border-top: 2px solid $table-border-color;
+  }
+
+  // Nesting
+  .table {
+    background-color: $body-bg;
+  }
+}
+
+.queue {
+  margin-bottom: $line-height-computed;
+  border: 1px dotted #000;
+  list-style-type: square;
+  background: #fff;
+  padding: 10px;
+  padding-left: 40px;
+}
+
+.queue li {
+  font-weight: bold;
+
+
+}
+
+.checkbox {
+  width: 150px;
+}

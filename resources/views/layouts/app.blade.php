@@ -2,16 +2,15 @@
     <head>
         <title>@yield('title')</title>
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="//el.loc:6001/socket.io/socket.io.js"></script>
-
-        <script src="css/app.css"></script>
+        <link href="{{ mix('/css/app.css') }}" rel="stylesheet" />
     </head>
     <body>
-
+        <h1>@yield('heading')</h1>
         <div class="container">
             @yield('content')
         </div>
-
-        <script src="js/app.js"></script>
+        <script src="{{ mix('/js/app.js') }}"></script>
     </body>
 </html>
