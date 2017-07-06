@@ -27,6 +27,7 @@ class ElevatorService
     {
         ElevatorRequest::truncate();
         $this->resetElevator();
+        return $this->getElevator();
     }
 
     public function sendRequest($request)

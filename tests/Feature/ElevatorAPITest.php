@@ -81,7 +81,10 @@ class ElevatorAPITest extends TestCase
         $response
             ->assertStatus(200)
             ->assertJson([
-                'reset' => 1,
+                'signal' => 'closed',
+                'direction' => 'stand',
+                'current_floor' => 1,
+                'request' => null,
             ]);
 
         $this->assertEquals(0, ElevatorRequest::all()->count());

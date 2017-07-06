@@ -55,8 +55,7 @@ class ElevatorController extends Controller
      */
     public function reset()
     {
-        $this->elevatorService->reset();
-        return $this->successResponse(['reset' => 1]);
+        return $this->successResponse($this->elevatorService->reset());
     }
 
     /**

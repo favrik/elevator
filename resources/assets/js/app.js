@@ -115,6 +115,13 @@ function queueRequest() {
 function callAPI(url) {
   var request = new XMLHttpRequest();
   request.open(url === 'reset' ? 'DELETE' : 'POST', '/api/' + url, true);
+  request.onreadystatechange = function () {
+    if(request.readyState === XMLHttpRequest.DONE && request.status === 200) {
+      if (url === 'reset') {
+        refreshStatus(JSON.parse(request.responseText));
+      }
+    }
+  };
   request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
   request.send(getRequestData(url));
 }
