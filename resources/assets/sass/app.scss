@@ -38,13 +38,6 @@ body {
   background-color: $body-bg;
 }
 
-@media screen and (min-width: 280px) {
-  body {
-    //font-size: 2em;
-  }
-}
-
-
 @media screen and (min-width: 500px) {
   html {
     font-size: calc(16px + 7 * ((70vw - 500px) / 900));
@@ -52,7 +45,7 @@ body {
 }
 
 h1 {
-  font-size: 2rem;
+
   text-align: center;
   letter-spacing: 2px;
   padding: 50px 20px;
@@ -62,6 +55,21 @@ h1 {
   color: #fff;
   font-family: $font-family-heading;
 }
+
+@media screen and (min-width: 280px) {
+  h1 {
+    font-size: 1.5rem;
+    padding: 20px;
+  }
+}
+
+@media screen and (min-width: 700px) {
+  h1 {
+    font-size: 2rem;
+    padding: 50px 20px;
+  }
+}
+
 
 h2 {
   font-size: 1.5rem;
@@ -198,3 +206,16 @@ th, td {
 .checkbox {
   width: 150px;
 }
+
+@media screen and (min-width: 280px) {
+  .checkbox input[type=checkbox], .checkbox-inline input[type=checkbox] {
+    margin-left: 0;
+  }
+
+  .btn {
+    margin-bottom: 15px;
+  }
+}
+
+
+
